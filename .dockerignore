@@ -1,0 +1,8 @@
+.git
+tmp
+client/node_modules
+client/.env
+client/build
+server/bin
+server/tmp
+server/config

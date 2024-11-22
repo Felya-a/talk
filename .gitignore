@@ -1,0 +1,6 @@
+/tmp/
+/.vscode/
+server/bin/
+server/tmp/
+server/config/
+!server/config/example.env
