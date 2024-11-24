@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sso/internal/config"
-	"sso/internal/utils"
 	"strconv"
+	"talk/internal/config"
+	"talk/internal/utils"
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sso/internal/config"
-	"sso/internal/utils"
+	"talk/internal/config"
+	"talk/internal/utils"
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"

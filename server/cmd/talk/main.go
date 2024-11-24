@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -20,15 +19,18 @@ func main() {
 	db := utils.MustConnectPostgres(config)
 	utils.Migrate(db)
 
-	application := app.New()
-	fmt.Println(application) // TODO: DELETE LINE
+	application := app.New(log, config.WebSocket.Port)
+
+	go application.WsServer.MustRun()
+
+	log.Info("Starting application", slog.Any("env", config.Env))
 
 	// Graceful shutdown
 	sgnl := gracefulShutdown()
 	log.Info("Stopping application", slog.String("signal", sgnl.String()))
 
 	// application.GrpcServer.Stop()
-	// application.HttpServer.Stop()
+	application.WsServer.Stop()
 	db.Close()
 
 	log.Info("Application stopped")

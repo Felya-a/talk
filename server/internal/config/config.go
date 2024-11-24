@@ -11,9 +11,15 @@ import (
 
 // Config структура, содержащая всю конфигурацию
 type Config struct {
-	Env      string `env:"ENV" env-required:"true"`
-	Sso      SSOConfig
-	Postgres PostgresConfig
+	Env       string `env:"ENV" env-required:"true"`
+	WebSocket WebSocketConfig
+	Sso       SSOConfig
+	Postgres  PostgresConfig
+}
+
+// WebSocketConfig структура, содержащая настройки для WebSocket сервера
+type WebSocketConfig struct {
+	Port string `env:"WEBSOCKET_PORT" env-required:"true"`
 }
 
 // SSOConfig структура, содержащая настройки для подключения к Postgresql
