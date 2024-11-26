@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"talk/internal/lib/logger/sl"
+	"talk/internal/models"
 	. "talk/internal/models"
 	. "talk/internal/ws"
 
@@ -44,7 +45,48 @@ func (h *JoinMessageHandler) HandleMessage(client *Client, message Message) {
 		return
 	}
 
-	room.Join(client)
+	if h.RoomsPool.FindByClientId(client.Uuid) != nil {
+		// TODO: Отправлять ошибку
+		fmt.Println("Пользователь уже находится в этой комнате")
+		return
+	}
 
+	for _, roomClient := range room.Clients {
+		// Отправка сообщения новому пользователю о существующих
+		if err := sendMessage(roomClient, client.Uuid, false); err != nil {
+			fmt.Println("Ошибка:", sl.Err(err))
+			return
+		}
+
+		// Отправка сообщения существующему пользователю о новом пользователе
+		if err := sendMessage(client, roomClient.Uuid, true); err != nil {
+			fmt.Println("Ошибка:", sl.Err(err))
+			return
+		}
+	}
+
+	room.Join(client)
 	client.Hub.ShareRooms()
+}
+
+func sendMessage(receiver *Client, peerID uuid.UUID, createOffer bool) error {
+	dataForMessage := []map[string]interface{}{
+		{
+			"peerID":      peerID,
+			"createOffer": createOffer,
+		},
+	}
+
+	encodeData, err := json.Marshal(dataForMessage)
+	if err != nil {
+		return fmt.Errorf("ошибка при формировании сообщения: %w", err)
+	}
+
+	message := models.Message{
+		Type: MessageTypeAddPeer,
+		Data: string(encodeData),
+	}
+
+	receiver.Send <- message
+	return nil
 }

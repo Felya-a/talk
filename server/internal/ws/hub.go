@@ -75,7 +75,7 @@ func (hub *Hub) ShareRooms() {
 
 	var roomsForShareMessage []map[string]interface{}
 	for _, room := range rooms {
-		var clientsForShareMessage []map[string]interface{}
+		clientsForShareMessage := []map[string]interface{}{}
 		for _, client := range room.Clients {
 			clientsForShareMessage = append(clientsForShareMessage, map[string]interface{}{
 				"id": client.Uuid,
