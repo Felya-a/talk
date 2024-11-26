@@ -10,9 +10,11 @@ import (
 	"talk/internal/config"
 	"talk/internal/lib/logger/sl"
 	"talk/internal/models"
+	ws "talk/internal/ws"
 	"talk/internal/ws/handlers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 type WsTransport struct {
@@ -21,15 +23,49 @@ type WsTransport struct {
 	port     string
 }
 
+// Настройка WebSocket
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		// Разрешаем все подключения (можно уточнить для безопасности)
+		return true
+	},
+}
+
 func New(
 	log *slog.Logger,
 	port string,
-	hub *models.Hub,
 ) *WsTransport {
 	setGinMode()
 	handler := gin.Default()
 
-	handler.GET("/ws", handlers.HandleConnections(hub))
+	roomsPool := ws.NewRoomsPool()
+
+	hub := ws.NewHub(roomsPool)
+	go hub.Run()
+
+	router := ws.NewMessageRouter()
+	router.RegisterHandler(models.MessageTypePing, &handlers.PingMessageHandler{})
+	router.RegisterHandler(models.MessageTypeJoin, &handlers.JoinMessageHandler{RoomsPool: roomsPool})
+	router.RegisterHandler(models.MessageTypeLeave, &handlers.LeaveMessageHandler{RoomsPool: roomsPool})
+	router.RegisterHandler(models.MessageTypeCreateRoom, &handlers.CreateRoomMessageHandler{RoomsPool: roomsPool})
+
+	handler.GET("/ws", func(ctx *gin.Context) {
+		// Обновляем HTTP-соединение до WebSocket
+		conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+		if err != nil {
+			log.Warn("Ошибка обновления до WebSocket: %v", err)
+			return
+		}
+
+		client := ws.NewClient(conn, hub)
+
+		hub.Register <- client
+
+		go client.WritePump()
+		go client.ReadPump(router)
+	})
 
 	wsServer := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),

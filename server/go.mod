@@ -62,6 +62,7 @@ require (
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/gin-gonic/gin v1.10.0
+	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/googollee/go-socket.io v1.7.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1 // indirect

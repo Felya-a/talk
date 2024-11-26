@@ -2,7 +2,6 @@ package app
 
 import (
 	"log/slog"
-	"talk/internal/models"
 	"talk/internal/transport/ws"
 )
 
@@ -16,9 +15,7 @@ func New(
 	log *slog.Logger,
 	wsPort string,
 ) *App {
-	hub := models.NewHub()
-	go hub.Run()
-	wsServer := ws.New(log, wsPort, hub)
+	wsServer := ws.New(log, wsPort)
 
 	return &App{
 		WsServer: wsServer,
