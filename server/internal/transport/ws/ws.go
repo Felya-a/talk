@@ -50,6 +50,8 @@ func New(
 	router.RegisterHandler(models.MessageTypeJoin, &handlers.JoinMessageHandler{RoomsPool: roomsPool})
 	router.RegisterHandler(models.MessageTypeLeave, &handlers.LeaveMessageHandler{RoomsPool: roomsPool})
 	router.RegisterHandler(models.MessageTypeCreateRoom, &handlers.CreateRoomMessageHandler{RoomsPool: roomsPool})
+	router.RegisterHandler(models.MessageTypeRelaySdp, &handlers.RelaySdpMessageHandler{RoomsPool: roomsPool, Hub: hub})
+	router.RegisterHandler(models.MessageTypeRelayIce, &handlers.RelayIceMessageHandler{RoomsPool: roomsPool, Hub: hub})
 
 	handler.GET("/ws", func(ctx *gin.Context) {
 		// Обновляем HTTP-соединение до WebSocket

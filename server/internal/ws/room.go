@@ -24,6 +24,15 @@ func NewRoom(name string) *Room {
 	}
 }
 
+func (r *Room) Run() {
+	for message := range r.Broadcast {
+		fmt.Println("Broadcast сообщение в комнате ", r.Uuid, message)
+		for _, client := range r.Clients {
+			client.Send <- message
+		}
+	}
+}
+
 func (r *Room) Join(client *Client) {
 	index := slices.Index(r.Clients, client)
 	if index != -1 {
@@ -42,4 +51,9 @@ func (r *Room) Leave(client *Client) {
 	} else {
 		fmt.Println("Пользователь ", client.Uuid, "не найден в комнате", r.Uuid, "при исключении")
 	}
+}
+
+func (r *Room) CheckExistUser(client *Client) bool {
+	index := slices.Index(r.Clients, client)
+	return index != -1
 }

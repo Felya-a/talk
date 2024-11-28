@@ -52,14 +52,14 @@ func (h *JoinMessageHandler) HandleMessage(client *Client, message Message) {
 	}
 
 	for _, roomClient := range room.Clients {
-		// Отправка сообщения новому пользователю о существующих
-		if err := sendMessage(roomClient, client.Uuid, false); err != nil {
+		// Отправка сообщения новому пользователю о существующем
+		if err := sendAddPeerMessage(roomClient, client.Uuid, false); err != nil {
 			fmt.Println("Ошибка:", sl.Err(err))
 			return
 		}
 
 		// Отправка сообщения существующему пользователю о новом пользователе
-		if err := sendMessage(client, roomClient.Uuid, true); err != nil {
+		if err := sendAddPeerMessage(client, roomClient.Uuid, true); err != nil {
 			fmt.Println("Ошибка:", sl.Err(err))
 			return
 		}
@@ -69,7 +69,7 @@ func (h *JoinMessageHandler) HandleMessage(client *Client, message Message) {
 	client.Hub.ShareRooms()
 }
 
-func sendMessage(receiver *Client, peerID uuid.UUID, createOffer bool) error {
+func sendAddPeerMessage(receiver *Client, peerID uuid.UUID, createOffer bool) error {
 	dataForMessage := []map[string]interface{}{
 		{
 			"peerID":      peerID,

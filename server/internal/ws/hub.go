@@ -6,6 +6,8 @@ import (
 	"sync"
 	"talk/internal/models"
 	. "talk/internal/models"
+
+	"github.com/google/uuid"
 )
 
 type Hub struct {
@@ -98,4 +100,13 @@ func (hub *Hub) ShareRooms() {
 		Type: MessageTypeShareRooms,
 		Data: string(encodeData),
 	}
+}
+
+func (hub *Hub) FindClientByUuid(uuid uuid.UUID) *Client {
+	for client := range hub.Clients {
+		if client.Uuid == uuid {
+			return client
+		}
+	}
+	return nil
 }
