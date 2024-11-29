@@ -1,7 +1,6 @@
 package ws
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"talk/internal/models"
@@ -14,7 +13,7 @@ type Hub struct {
 	Clients    map[*Client]bool
 	Register   chan *Client
 	Unregister chan *Client
-	Broadcast  chan Message
+	Broadcast  chan TransmitMessage
 	RoomsPool  *RoomsPool
 	mu         sync.Mutex
 }
@@ -24,7 +23,7 @@ func NewHub(roomsPool *RoomsPool) *Hub {
 		Clients:    make(map[*Client]bool),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
-		Broadcast:  make(chan Message),
+		Broadcast:  make(chan TransmitMessage),
 		RoomsPool:  roomsPool,
 	}
 }
@@ -65,7 +64,7 @@ func (hub *Hub) removeClient(client *Client) {
 }
 
 // Широковещательная отправка сообщений
-func (hub *Hub) broadcastMessage(message Message) {
+func (hub *Hub) broadcastMessage(message TransmitMessage) {
 	fmt.Printf("Broadcast сообщение: %s\n", message)
 	for client := range hub.Clients {
 		client.Send <- message
@@ -75,30 +74,24 @@ func (hub *Hub) broadcastMessage(message Message) {
 func (hub *Hub) ShareRooms() {
 	rooms := hub.RoomsPool.FindAll()
 
-	var roomsForShareMessage []map[string]interface{}
-	for _, room := range rooms {
-		clientsForShareMessage := []map[string]interface{}{}
-		for _, client := range room.Clients {
-			clientsForShareMessage = append(clientsForShareMessage, map[string]interface{}{
+	roomsForShareMessage := make([]map[string]interface{}, len(rooms))
+	for i, room := range rooms {
+		clientsForShareMessage := make([]map[string]interface{}, len(room.Clients))
+		for j, client := range room.Clients {
+			clientsForShareMessage[j] = map[string]interface{}{
 				"id": client.Uuid,
-			})
+			}
 		}
-		roomsForShareMessage = append(roomsForShareMessage, map[string]interface{}{
+		roomsForShareMessage[i] = map[string]interface{}{
 			"id":      room.Uuid,
 			"name":    room.Name,
 			"clients": clientsForShareMessage,
-		})
+		}
 	}
 
-	encodeData, err := json.Marshal(roomsForShareMessage)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-
-	hub.Broadcast <- models.Message{
+	hub.Broadcast <- models.TransmitMessage{
 		Type: MessageTypeShareRooms,
-		Data: string(encodeData),
+		Data: roomsForShareMessage,
 	}
 }
 

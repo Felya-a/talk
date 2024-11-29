@@ -22,7 +22,7 @@ type RelayIceMessageHandler struct {
 	Hub       *Hub
 }
 
-func (h *RelayIceMessageHandler) HandleMessage(client *Client, message Message) {
+func (h *RelayIceMessageHandler) HandleMessage(client *Client, message ReceiveMessage) {
 	var dto RelayIceMessageDto
 
 	if err := json.Unmarshal([]byte(message.Data), &dto); err != nil {
@@ -57,8 +57,13 @@ func (h *RelayIceMessageHandler) HandleMessage(client *Client, message Message) 
 		return
 	}
 
-	targetClient.Send <- models.Message{
+	messageData := map[string]interface{}{
+		"peer_id":       client.Uuid,
+		"ice_candidate": dto.IceCandidate,
+	}
+
+	targetClient.Send <- models.TransmitMessage{
 		Type: MessageTypeIceCandidate,
-		Data: dto.IceCandidate,
+		Data: messageData,
 	}
 }

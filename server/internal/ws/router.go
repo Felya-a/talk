@@ -6,7 +6,7 @@ import (
 )
 
 type MessageHandler interface {
-	HandleMessage(client *Client, message Message)
+	HandleMessage(client *Client, message ReceiveMessage)
 }
 
 type MessageRouter struct {
@@ -23,7 +23,7 @@ func (r *MessageRouter) RegisterHandler(messageType MessageType, handler Message
 	r.handlers[messageType] = handler
 }
 
-func (r *MessageRouter) RouteMessage(client *Client, message Message) error {
+func (r *MessageRouter) RouteMessage(client *Client, message ReceiveMessage) error {
 	handler, exists := r.handlers[message.Type]
 	if !exists {
 		fmt.Printf("no handler for message type: %s\n", message.Type)

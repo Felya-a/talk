@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"talk/internal/models"
 	. "talk/internal/models"
@@ -12,7 +11,7 @@ type LeaveMessageHandler struct {
 	RoomsPool *RoomsPool
 }
 
-func (h *LeaveMessageHandler) HandleMessage(client *Client, message Message) {
+func (h *LeaveMessageHandler) HandleMessage(client *Client, message ReceiveMessage) {
 	room := h.RoomsPool.FindByClientId(client.Uuid)
 	if room == nil {
 		// TODO: Отправлять ошибку
@@ -26,21 +25,16 @@ func (h *LeaveMessageHandler) HandleMessage(client *Client, message Message) {
 		return
 	}
 
-	encodeData, err := json.Marshal([]map[string]interface{}{
-		{"peerID": client.Uuid},
-	})
-	if err != nil {
-		// TODO: Отправлять ошибку
-		fmt.Println("ошибка при формировании сообщения: %w", err)
-		return
-	}
-
-	room.Broadcast <- models.Message{
-		Type: MessageTypeRemovePeer,
-		Data: string(encodeData),
-	}
-
 	room.Leave(client)
+
+	messageData := map[string]interface{}{
+		"peerID": client.Uuid,
+	}
+
+	room.Broadcast <- models.TransmitMessage{
+		Type: MessageTypeRemovePeer,
+		Data: messageData,
+	}
 
 	client.Hub.ShareRooms()
 }

@@ -19,12 +19,12 @@ const (
 	MessageTypeSessionDescription MessageType = "session-description"
 )
 
-type Message struct {
-	Type MessageType `json:"type"`
-	Data string      `json:"data"`
+type ReceiveMessage struct {
+	Type MessageType     `json:"type"`
+	Data json.RawMessage `json:"data"`
 }
 
-func (msg *Message) ToJson() ([]byte, error) {
-	json, err := json.Marshal(msg)
-	return json, err
+type TransmitMessage struct {
+	Type MessageType `json:"type"`
+	Data interface{} `json:"data"`
 }

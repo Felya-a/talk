@@ -31,7 +31,7 @@ type Client struct {
 	Uuid uuid.UUID
 	Hub  *Hub
 	conn *websocket.Conn
-	Send chan (Message)
+	Send chan TransmitMessage
 }
 
 func NewClient(
@@ -42,7 +42,7 @@ func NewClient(
 		Uuid: uuid.New(),
 		conn: conn,
 		Hub:  hub,
-		Send: make(chan Message),
+		Send: make(chan TransmitMessage),
 	}
 }
 
@@ -69,7 +69,7 @@ func (client *Client) ReadPump(router *MessageRouter) {
 		}
 
 		// Десериализация сообщения
-		var message Message
+		var message ReceiveMessage
 		if err := json.Unmarshal(messageBytes, &message); err != nil {
 			log.Printf("Invalid message format: %v", err)
 			continue
@@ -97,7 +97,7 @@ func (client *Client) WritePump() {
 			fmt.Println("Новое сообщение в канале пользователя: ", message)
 
 			// Сериализация сообщения
-			encodeMessage, err := message.ToJson()
+			encodeMessage, err := json.Marshal(message)
 			if err != nil {
 				fmt.Println("Ошибка формирования сообщения ", sl.Err(err))
 			}
@@ -109,12 +109,12 @@ func (client *Client) WritePump() {
 		case <-ticker.C:
 			unixTimeMillis := time.Now().UnixNano() / int64(time.Millisecond) // Время в миллисекундах
 
-			pingMessage := &Message{
+			pingMessage := &TransmitMessage{
 				Type: MessageTypePing,
 				Data: strconv.FormatInt(unixTimeMillis, 10),
 			}
 
-			encodeMessage, err := pingMessage.ToJson()
+			encodeMessage, err := json.Marshal(pingMessage)
 			if err != nil {
 				fmt.Println("Ошибка формирования сообщения ", sl.Err(err))
 			}

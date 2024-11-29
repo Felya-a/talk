@@ -46,7 +46,7 @@ func New(
 	go hub.Run()
 
 	router := ws.NewMessageRouter()
-	router.RegisterHandler(models.MessageTypePing, &handlers.PingMessageHandler{})
+	router.RegisterHandler(models.MessageTypePing, &handlers.PingMessageHandler{Hub: hub})
 	router.RegisterHandler(models.MessageTypeJoin, &handlers.JoinMessageHandler{RoomsPool: roomsPool})
 	router.RegisterHandler(models.MessageTypeLeave, &handlers.LeaveMessageHandler{RoomsPool: roomsPool})
 	router.RegisterHandler(models.MessageTypeCreateRoom, &handlers.CreateRoomMessageHandler{RoomsPool: roomsPool})

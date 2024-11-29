@@ -6,9 +6,11 @@ import (
 	. "talk/internal/ws"
 )
 
-type PingMessageHandler struct{}
+type PingMessageHandler struct {
+	Hub *Hub
+}
 
-func (h *PingMessageHandler) HandleMessage(client *Client, message Message) {
-	fmt.Println("PING HANDLER")
-	fmt.Println(message)
+func (h *PingMessageHandler) HandleMessage(client *Client, message ReceiveMessage) {
+	fmt.Println("Ping from ", client.Uuid)
+	h.Hub.ShareRooms() // DEBUG ONLY
 }

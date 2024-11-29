@@ -18,7 +18,7 @@ type CreateRoomMessageHandler struct {
 	RoomsPool *RoomsPool
 }
 
-func (h *CreateRoomMessageHandler) HandleMessage(client *Client, message Message) {
+func (h *CreateRoomMessageHandler) HandleMessage(client *Client, message ReceiveMessage) {
 	var dto CreateRoomMessageDto
 
 	if err := json.Unmarshal([]byte(message.Data), &dto); err != nil {
@@ -32,6 +32,7 @@ func (h *CreateRoomMessageHandler) HandleMessage(client *Client, message Message
 	}
 
 	createdRoom := NewRoom(dto.RoomName)
+	go createdRoom.Run()
 
 	h.RoomsPool.Add(createdRoom)
 

@@ -20,7 +20,7 @@ type JoinMessageHandler struct {
 	RoomsPool *RoomsPool
 }
 
-func (h *JoinMessageHandler) HandleMessage(client *Client, message Message) {
+func (h *JoinMessageHandler) HandleMessage(client *Client, message ReceiveMessage) {
 	var dto JoinMessageDto
 
 	if err := json.Unmarshal([]byte(message.Data), &dto); err != nil {
@@ -70,21 +70,14 @@ func (h *JoinMessageHandler) HandleMessage(client *Client, message Message) {
 }
 
 func sendAddPeerMessage(receiver *Client, peerID uuid.UUID, createOffer bool) error {
-	dataForMessage := []map[string]interface{}{
-		{
-			"peerID":      peerID,
-			"createOffer": createOffer,
-		},
+	messageData := map[string]interface{}{
+		"peerID":      peerID,
+		"createOffer": createOffer,
 	}
 
-	encodeData, err := json.Marshal(dataForMessage)
-	if err != nil {
-		return fmt.Errorf("ошибка при формировании сообщения: %w", err)
-	}
-
-	message := models.Message{
+	message := models.TransmitMessage{
 		Type: MessageTypeAddPeer,
-		Data: string(encodeData),
+		Data: messageData,
 	}
 
 	receiver.Send <- message

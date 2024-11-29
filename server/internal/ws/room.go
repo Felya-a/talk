@@ -12,7 +12,7 @@ type Room struct {
 	Uuid      uuid.UUID
 	Name      string
 	Clients   []*Client
-	Broadcast chan Message
+	Broadcast chan TransmitMessage
 }
 
 func NewRoom(name string) *Room {
@@ -20,7 +20,7 @@ func NewRoom(name string) *Room {
 		Uuid:      uuid.New(),
 		Name:      name,
 		Clients:   []*Client{},
-		Broadcast: make(chan Message),
+		Broadcast: make(chan TransmitMessage),
 	}
 }
 

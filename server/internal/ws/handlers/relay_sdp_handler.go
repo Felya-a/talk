@@ -22,7 +22,7 @@ type RelaySdpMessageHandler struct {
 	Hub       *Hub
 }
 
-func (h *RelaySdpMessageHandler) HandleMessage(client *Client, message Message) {
+func (h *RelaySdpMessageHandler) HandleMessage(client *Client, message ReceiveMessage) {
 	var dto RelaySdpMessageDto
 
 	if err := json.Unmarshal([]byte(message.Data), &dto); err != nil {
@@ -57,8 +57,13 @@ func (h *RelaySdpMessageHandler) HandleMessage(client *Client, message Message) 
 		return
 	}
 
-	targetClient.Send <- models.Message{
+	messageData := map[string]interface{}{
+		"peer_id":             client.Uuid,
+		"session_description": dto.SessionDescription,
+	}
+
+	targetClient.Send <- models.TransmitMessage{
 		Type: MessageTypeSessionDescription,
-		Data: dto.SessionDescription,
+		Data: messageData,
 	}
 }
