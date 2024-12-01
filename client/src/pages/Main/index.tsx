@@ -1,48 +1,50 @@
-import { useState, useEffect, useRef } from "react"
-import socket from "../../socket"
-import { ACTIONS } from "../../socket/actions"
-import { v4 } from "uuid"
+import { observer } from "mobx-react-lite"
+import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router"
+import { useWebSocket } from "../../socket/Context"
+import { sessionStore } from "../../store/SessionStore"
 
-export default function Main() {
+export default observer(() => {
 	const navigate = useNavigate()
-	const [rooms, updateRooms] = useState([])
 	const rootNode = useRef()
-
-	useEffect(() => {
-		socket.on(ACTIONS.SHARE_ROOMS, ({ rooms = [] } = {}) => {
-			if (rootNode.current) {
-				updateRooms(rooms)
-			}
-		})
-	}, [])
 
 	return (
 		<div ref={rootNode}>
 			<h1>Available Rooms</h1>
-
-			<ul>
-				{rooms.map(roomID => (
-					<li key={roomID}>
-						{roomID}
-						<button
-							onClick={() => {
-								navigate(`/room/${roomID}`)
-							}}
-						>
-							JOIN ROOM
-						</button>
-					</li>
-				))}
-			</ul>
-
 			<button
+				// onClick={() => {
+				// 	navigate(`/room/${v4()}`)
+				// }}
 				onClick={() => {
-					navigate(`/room/${v4()}`)
+					sessionStore.createRoom()
 				}}
 			>
 				Create New Room
 			</button>
+
+			<ul>
+				{sessionStore.rooms.map((room, index) => (
+					<li key={index}>
+						{room.uuid}
+						<button onClick={() => {
+							sessionStore.joinToRoom(room.uuid)
+							// navigate(`/room/${room.uuid}`)
+						}}>
+							JOIN ROOM
+						</button>
+						<button onClick={() => sessionStore.leave()}>
+							Leave
+						</button>
+						<ul>
+							{room.clients.map((client, clientIndex) => (
+								<li key={clientIndex} style={{marginLeft: "20px"}}>
+									{client.uuid}
+								</li>
+							))}
+						</ul>
+					</li>
+				))}
+			</ul>
 		</div>
 	)
-}
+})
