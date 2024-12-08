@@ -52,13 +52,13 @@ func (h *JoinMessageHandler) HandleMessage(client *Client, message ReceiveMessag
 	}
 
 	for _, roomClient := range room.Clients {
-		// Отправка сообщения новому пользователю о существующем
+		// Отправка сообщения существующему пользователю о новом пользователе
 		if err := sendAddPeerMessage(roomClient, client.Uuid, false); err != nil {
 			fmt.Println("Ошибка:", sl.Err(err))
 			return
 		}
 
-		// Отправка сообщения существующему пользователю о новом пользователе
+		// Отправка сообщения новому пользователю о существующем
 		if err := sendAddPeerMessage(client, roomClient.Uuid, true); err != nil {
 			fmt.Println("Ошибка:", sl.Err(err))
 			return
@@ -71,8 +71,8 @@ func (h *JoinMessageHandler) HandleMessage(client *Client, message ReceiveMessag
 
 func sendAddPeerMessage(receiver *Client, peerID uuid.UUID, createOffer bool) error {
 	messageData := map[string]interface{}{
-		"peerID":      peerID,
-		"createOffer": createOffer,
+		"peer_id":      peerID,
+		"create_offer": createOffer,
 	}
 
 	message := models.TransmitMessage{

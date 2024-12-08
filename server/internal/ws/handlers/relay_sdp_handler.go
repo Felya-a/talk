@@ -13,8 +13,8 @@ import (
 )
 
 type RelaySdpMessageDto struct {
-	PeerID             string `json:"peer_id" validate:"required"`
-	SessionDescription string `json:"session_description" validate:"required"`
+	PeerID             string          `json:"peer_id" validate:"required"`
+	SessionDescription json.RawMessage `json:"session_description" validate:"required"`
 }
 
 type RelaySdpMessageHandler struct {

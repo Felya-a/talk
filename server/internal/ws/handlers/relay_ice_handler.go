@@ -13,8 +13,8 @@ import (
 )
 
 type RelayIceMessageDto struct {
-	PeerID       string `json:"peer_id" validate:"required"`
-	IceCandidate string `json:"ice_candidate" validate:"required"`
+	PeerID       string          `json:"peer_id" validate:"required"`
+	IceCandidate json.RawMessage `json:"ice_candidate" validate:"required"`
 }
 
 type RelayIceMessageHandler struct {

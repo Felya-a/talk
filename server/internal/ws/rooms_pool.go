@@ -49,7 +49,7 @@ func (rp *RoomsPool) Add(room *Room) {
 
 	rp.rooms = append(rp.rooms, room)
 	fmt.Println("Создана новая комната")
-	fmt.Println("ID: ", room.Uuid)
+	fmt.Println("UUID: ", room.Uuid)
 	fmt.Println("Name: ", room.Name)
 }
 

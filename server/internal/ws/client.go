@@ -52,20 +52,15 @@ func (client *Client) ReadPump(router *MessageRouter) {
 		client.Hub.Unregister <- client
 	}()
 
-	client.conn.SetReadLimit(maxMessageSize)
-
 	for {
 		_, messageBytes, err := client.conn.ReadMessage()
-		fmt.Println("Новое сообщение от пользователя " + client.Uuid.String())
-		fmt.Println(string(messageBytes))
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("IsUnexpectedCloseError: %v", err)
 				return
 			}
 			fmt.Println("Неивестная ошибка при получении сообщения ", sl.Err(err))
-			time.Sleep(2 * time.Second)
-			continue
+			return
 		}
 
 		// Десериализация сообщения
@@ -87,6 +82,7 @@ func (client *Client) WritePump() {
 		client.Hub.Unregister <- client
 	}()
 
+	client.Hub.ShareRooms()
 	for {
 		select {
 		case message, ok := <-client.Send:
@@ -94,7 +90,7 @@ func (client *Client) WritePump() {
 				fmt.Println("Канал пользователя ", client.Uuid, " был закрыт")
 				return
 			}
-			fmt.Println("Новое сообщение в канале пользователя: ", message)
+			fmt.Println("Новое сообщение пользователю", client.Uuid, message.Type)
 
 			// Сериализация сообщения
 			encodeMessage, err := json.Marshal(message)

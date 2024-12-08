@@ -27,8 +27,7 @@ export default observer(() => {
 					<li key={index}>
 						{room.uuid}
 						<button onClick={() => {
-							sessionStore.joinToRoom(room.uuid)
-							// navigate(`/room/${room.uuid}`)
+							navigate(`/room/${room.uuid}`)
 						}}>
 							JOIN ROOM
 						</button>

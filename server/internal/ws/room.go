@@ -3,6 +3,7 @@ package ws
 import (
 	"fmt"
 	"slices"
+	"talk/internal/models"
 	. "talk/internal/models"
 
 	"github.com/google/uuid"
@@ -16,12 +17,16 @@ type Room struct {
 }
 
 func NewRoom(name string) *Room {
-	return &Room{
+	var room = &Room{
 		Uuid:      uuid.New(),
 		Name:      name,
 		Clients:   []*Client{},
 		Broadcast: make(chan TransmitMessage),
 	}
+
+	go room.Run()
+
+	return room
 }
 
 func (r *Room) Run() {
@@ -50,6 +55,17 @@ func (r *Room) Leave(client *Client) {
 		fmt.Println("Пользователь ", client.Uuid, "исключен из комнаты", r.Uuid)
 	} else {
 		fmt.Println("Пользователь ", client.Uuid, "не найден в комнате", r.Uuid, "при исключении")
+	}
+
+	// TODO: REFACTOR
+	// убрать отсюда формирование сообщения
+	messageData := map[string]interface{}{
+		"peer_id": client.Uuid,
+	}
+
+	r.Broadcast <- models.TransmitMessage{
+		Type: MessageTypeRemovePeer,
+		Data: messageData,
 	}
 }
 

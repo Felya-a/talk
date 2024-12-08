@@ -28,7 +28,7 @@ func (h *LeaveMessageHandler) HandleMessage(client *Client, message ReceiveMessa
 	room.Leave(client)
 
 	messageData := map[string]interface{}{
-		"peerID": client.Uuid,
+		"peer_id": client.Uuid,
 	}
 
 	room.Broadcast <- models.TransmitMessage{

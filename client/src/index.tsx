@@ -8,9 +8,7 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
-  <React.StrictMode>
     <WebSocketProvider url="ws://localhost:8090/ws">
       <App />
     </WebSocketProvider>
-  </React.StrictMode>
 );

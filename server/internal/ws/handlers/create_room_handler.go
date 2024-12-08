@@ -32,7 +32,6 @@ func (h *CreateRoomMessageHandler) HandleMessage(client *Client, message Receive
 	}
 
 	createdRoom := NewRoom(dto.RoomName)
-	go createdRoom.Run()
 
 	h.RoomsPool.Add(createdRoom)
 

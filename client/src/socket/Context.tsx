@@ -1,9 +1,6 @@
-// WebSocketContext.tsx
-import React, { createContext, useContext, useEffect, useRef } from "react";
-import SocketService, { SocketStatuses } from "./SocketService";
-import { sessionStore } from "../store/SessionStore"
-import { observe } from "mobx"
 import { observer } from "mobx-react-lite"
+import React, { createContext, useContext, useEffect, useRef, useState } from "react"
+import SocketService, { SocketStatuses } from "./SocketService"
 
 const WebSocketContext = createContext<SocketService | null>(null);
 
@@ -13,19 +10,21 @@ interface WebSocketProviderProps {
 }
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = observer(({ children, url }) => {
+    const [initialized, setInitialized] = useState(false);
     const webSocketServiceRef = useRef<SocketService | null>(null);
 
     useEffect(() => {
         // Инициализируем SocketService
         webSocketServiceRef.current = new SocketService(url);
+        setInitialized(true)
 
         return () => {
             // Закрываем соединение при размонтировании
-            webSocketServiceRef.current?.close();
+            // webSocketServiceRef.current?.close();
         };
     }, [url]);
 
-    if (webSocketServiceRef?.current?.socketStatus === SocketStatuses.CONNECTING) {
+    if (!initialized || webSocketServiceRef?.current?.socketStatus === SocketStatuses.CONNECTING) {
         return (
             <div>
                 Подключение к серверу...

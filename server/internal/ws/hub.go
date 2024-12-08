@@ -32,11 +32,11 @@ func (hub *Hub) Run() {
 	for {
 		select {
 		case client := <-hub.Register:
-			hub.addClient(client)
+			go hub.addClient(client)
 		case client := <-hub.Unregister:
-			hub.removeClient(client)
+			go hub.removeClient(client)
 		case message := <-hub.Broadcast:
-			hub.broadcastMessage(message)
+			go hub.broadcastMessage(message)
 		}
 	}
 }
@@ -55,12 +55,21 @@ func (hub *Hub) removeClient(client *Client) {
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
 
-	if _, ok := hub.Clients[client]; ok {
-		delete(hub.Clients, client)
-		close(client.Send)
-		client.conn.Close()
-		fmt.Printf("Пользователь %s отключился\n", client.Uuid)
+	if _, ok := hub.Clients[client]; !ok {
+		return
 	}
+
+	delete(hub.Clients, client)
+	close(client.Send)
+
+	room := hub.RoomsPool.FindByClientId(client.Uuid)
+	if room != nil {
+		room.Leave(client)
+	}
+
+	client.conn.Close()
+	hub.ShareRooms()
+	fmt.Printf("Пользователь %s отключился\n", client.Uuid)
 }
 
 // Широковещательная отправка сообщений
@@ -79,11 +88,11 @@ func (hub *Hub) ShareRooms() {
 		clientsForShareMessage := make([]map[string]interface{}, len(room.Clients))
 		for j, client := range room.Clients {
 			clientsForShareMessage[j] = map[string]interface{}{
-				"id": client.Uuid,
+				"uuid": client.Uuid,
 			}
 		}
 		roomsForShareMessage[i] = map[string]interface{}{
-			"id":      room.Uuid,
+			"uuid":    room.Uuid,
 			"name":    room.Name,
 			"clients": clientsForShareMessage,
 		}
