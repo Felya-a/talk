@@ -1,39 +1,43 @@
 package main
 
 import (
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	"talk/internal/app"
 	"talk/internal/config"
-	"talk/internal/lib/logger"
+	. "talk/internal/lib/logger"
+	"talk/internal/lib/logger/logrus"
+	. "talk/internal/services/auth"
 	"talk/internal/utils"
 )
 
 func main() {
 	config := config.MustLoad()
-	logger.SetEnv(config.Env)
-	log := logger.Logger()
 
 	db := utils.MustConnectPostgres(config)
 	utils.Migrate(db)
 
-	application := app.New(log, config.WebSocket.Port)
+	InitGlobalLogger(logger.NewLogrusLogger)
+
+	authService := NewAuthService()
+
+	application := app.New(config, authService)
 
 	go application.WsServer.MustRun()
+	go application.HttpServer.MustRun()
 
-	log.Info("Starting application", slog.Any("env", config.Env))
+	Log.Info("Starting application", LogFields{"env": config.Env})
 
 	// Graceful shutdown
 	sgnl := gracefulShutdown()
-	log.Info("Stopping application", slog.String("signal", sgnl.String()))
+	Log.Info("Stopping application", LogFields{"signal": sgnl.String()})
 
 	// application.GrpcServer.Stop()
 	application.WsServer.Stop()
 	db.Close()
 
-	log.Info("Application stopped")
+	Log.Info("Application stopped", nil)
 }
 
 func gracefulShutdown() os.Signal {

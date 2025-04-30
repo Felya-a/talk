@@ -13,6 +13,8 @@ import (
 type Config struct {
 	Env       string `env:"ENV" env-required:"true"`
 	WebSocket WebSocketConfig
+	Http      HttpConfig
+	Talk      TalkConfig
 	Sso       SSOConfig
 	Postgres  PostgresConfig
 }
@@ -22,9 +24,22 @@ type WebSocketConfig struct {
 	Port string `env:"WEBSOCKET_PORT" env-required:"true"`
 }
 
-// SSOConfig структура, содержащая настройки для подключения к Postgresql
+// WebSocketConfig структура, содержащая настройки для HTTP сервера
+type HttpConfig struct {
+	Host string `env:"HTTP_HOST" env-required:"true"`
+	Port string `env:"HTTP_PORT" env-required:"true"`
+}
+
+// TalkConfig структура, содержащая вспомогательные данные для работы текущего сервиса
+type TalkConfig struct {
+	HttpClientUrl string `env:"TALK_HTTP_CLIENT_URL" env-required:"true"`
+}
+
+// SSOConfig структура, содержащая настройки для подключения к сервису SSO
 type SSOConfig struct {
-	Url string `env:"SSO_URL" env-required:"true"`
+	HttpServerUrl string `env:"SSO_HTTP_SERVER_URL" env-required:"true"`
+	HttpClientUrl string `env:"SSO_HTTP_CLIENT_URL" env-required:"true"`
+	GrpcServerUrl string `env:"SSO_GRPC_SERVER_URL" env-required:"true"`
 }
 
 // PostgresConfig структура, содержащая настройки для подключения к Postgresql

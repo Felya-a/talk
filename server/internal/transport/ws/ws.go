@@ -3,22 +3,24 @@ package ws
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
+	"talk/internal/adapter"
 	"talk/internal/config"
-	"talk/internal/lib/logger/sl"
-	"talk/internal/models"
-	ws "talk/internal/ws"
-	"talk/internal/ws/handlers"
+	"talk/internal/core"
+	"talk/internal/handlers"
+	. "talk/internal/lib/logger"
+	. "talk/internal/models/messages"
+	message_decoder "talk/internal/services/message_decoder/direct"
+	message_encoder "talk/internal/services/message_encoder/direct"
+	usecase "talk/internal/use-case"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
 type WsTransport struct {
-	log      *slog.Logger
 	wsServer *http.Server
 	port     string
 }
@@ -34,39 +36,50 @@ var upgrader = websocket.Upgrader{
 }
 
 func New(
-	log *slog.Logger,
 	port string,
 ) *WsTransport {
 	setGinMode()
 	handler := gin.Default()
 
-	roomsPool := ws.NewRoomsPool()
-
-	hub := ws.NewHub(roomsPool)
+	roomsPool := core.NewRoomsPool()
+	router := core.NewMessageRouter()
+	hub := core.NewHub(router, roomsPool)
 	go hub.Run()
 
-	router := ws.NewMessageRouter()
-	router.RegisterHandler(models.MessageTypePing, &handlers.PingMessageHandler{Hub: hub})
-	router.RegisterHandler(models.MessageTypeJoin, &handlers.JoinMessageHandler{RoomsPool: roomsPool})
-	router.RegisterHandler(models.MessageTypeLeave, &handlers.LeaveMessageHandler{RoomsPool: roomsPool})
-	router.RegisterHandler(models.MessageTypeCreateRoom, &handlers.CreateRoomMessageHandler{RoomsPool: roomsPool})
-	router.RegisterHandler(models.MessageTypeRelaySdp, &handlers.RelaySdpMessageHandler{RoomsPool: roomsPool, Hub: hub})
-	router.RegisterHandler(models.MessageTypeRelayIce, &handlers.RelayIceMessageHandler{RoomsPool: roomsPool, Hub: hub})
+	messageEncoder := message_encoder.NewDirectMessageEncoder()
+	messageDecoder := message_decoder.NewDirectMessageDecoder()
+
+	// Use-case
+	shareRooms := usecase.ShareRoomsUseCase{Hub: hub, MessageEncoder: messageEncoder}
+	joinClient := usecase.JoinClientUseCase{Hub: hub, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
+	leaveClient := usecase.LeaveClientUseCase{Hub: hub, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
+	createRoom := usecase.CreateRoomUseCase{Hub: hub, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
+	sendIceOrSdp := usecase.SendIceOrSdpUseCase{Hub: hub, ShareRooms: shareRooms}
+
+	// Регистрация обработчиков сообщений
+	router.RegisterHandler(MessageTypePing, &handlers.PingMessageHandler{})
+	router.RegisterHandler(MessageTypeJoin, &handlers.JoinMessageHandler{JoinClient: joinClient})
+	router.RegisterHandler(MessageTypeLeave, &handlers.LeaveMessageHandler{LeaveClient: leaveClient})
+	router.RegisterHandler(MessageTypeCreateRoom, &handlers.CreateRoomMessageHandler{CreateRoom: createRoom, ShareRooms: shareRooms})
+	router.RegisterHandler(MessageTypeRelaySdp, &handlers.RelaySdpMessageHandler{SendIceOrSdp: sendIceOrSdp})
+	router.RegisterHandler(MessageTypeRelayIce, &handlers.RelayIceMessageHandler{SendIceOrSdp: sendIceOrSdp})
 
 	handler.GET("/ws", func(ctx *gin.Context) {
 		// Обновляем HTTP-соединение до WebSocket
 		conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 		if err != nil {
-			log.Warn("Ошибка обновления до WebSocket: %v", err)
+			Log.Warn("error upgrade http to websocket", Log.Err(err))
 			return
 		}
 
-		client := ws.NewClient(conn, hub)
+		webSocketConnection := adapter.NewWebSocketConnection(
+			conn,
+			messageEncoder,
+			messageDecoder,
+			shareRooms,
+		)
 
-		hub.Register <- client
-
-		go client.WritePump()
-		go client.ReadPump(router)
+		hub.Register <- webSocketConnection
 	})
 
 	wsServer := &http.Server{
@@ -75,7 +88,6 @@ func New(
 	}
 
 	return &WsTransport{
-		log,
 		wsServer,
 		port,
 	}
@@ -88,18 +100,11 @@ func (wst *WsTransport) MustRun() {
 }
 
 func (wst *WsTransport) run() error {
-	const op = "ws.run"
-
-	log := wst.log.With(
-		slog.String("op", op),
-		slog.String("port", wst.port),
-	)
-
-	log.Info("ws server is running", slog.String("addr", wst.wsServer.Addr))
 	if err := wst.wsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Error("error on start ws server", sl.Err(err))
-		return fmt.Errorf("%s: %v", op, err)
+		Log.Error("error on start ws server", Log.Err(err))
+		return fmt.Errorf("error on start ws server")
 	}
+	Log.Info("ws server is running", LogFields{"port": wst.port, "addr": wst.wsServer.Addr})
 
 	return nil
 }
@@ -120,13 +125,13 @@ func setGinMode() {
 }
 
 func (a *WsTransport) Stop() {
-	a.log.Info("stopping ws server")
+	Log.Info("stopping ws server", nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := a.wsServer.Shutdown(ctx); err != nil {
-		a.log.Error("Server forced to shutdown: ", sl.Err(err))
+		Log.Error("Server forced to shutdown: ", Log.Err(err))
 	}
 }
 

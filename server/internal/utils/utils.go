@@ -75,3 +75,20 @@ func GetPostgresConnectionString(config config.Config) string {
 		"disable",
 	)
 }
+
+func MergeMaps(map1, map2 map[string]interface{}) map[string]interface{} {
+	// Создаем новую карту, в которую будем сливать
+	merged := make(map[string]interface{})
+
+	// Добавляем все элементы из первой карты
+	for k, v := range map1 {
+		merged[k] = v
+	}
+
+	// Добавляем все элементы из второй карты
+	for k, v := range map2 {
+		merged[k] = v
+	}
+
+	return merged
+}
