@@ -24,7 +24,7 @@ type WebSocketConfig struct {
 	Port string `env:"WEBSOCKET_PORT" env-required:"true"`
 }
 
-// WebSocketConfig структура, содержащая настройки для HTTP сервера
+// HttpConfig структура, содержащая настройки для HTTP сервера
 type HttpConfig struct {
 	Host string `env:"HTTP_HOST" env-required:"true"`
 	Port string `env:"HTTP_PORT" env-required:"true"`

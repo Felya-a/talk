@@ -42,6 +42,7 @@ func (client *Client) ReadPump(router *MessageRouter) {
 
 	for {
 		message, err := client.Connection.Receive()
+		Log.Info("[Client] receive  message", LogFields{"type": message.Type, "clientUuid": client.Uuid})
 		if err != nil {
 			if errors.Is(err, ErrCloseConnection) {
 				Log.Info("[Client] close connection", LogFields{"clientUuid": client.Uuid})
@@ -52,6 +53,7 @@ func (client *Client) ReadPump(router *MessageRouter) {
 		}
 
 		if err := client.Hub.HandleMessage(client, message); err != nil {
+			Log.Error("[Client] error on handle message", Log.Err(err))
 			client.Connection.Send(TransmitMessage{}, err)
 		}
 	}
@@ -65,9 +67,9 @@ func (client *Client) WritePump() {
 			Log.Info("[Client] client channel was closed", LogFields{"clientUuid": client.Uuid})
 			return
 		}
-		Log.Info("[Client] message to send", LogFields{
-			"clientUuid":  client.Uuid,
-			"messageType": message.Type,
+		Log.Info("[Client] transmit message", LogFields{
+			"clientUuid": client.Uuid,
+			"type":       message.Type,
 		})
 
 		client.Connection.Send(message, nil)

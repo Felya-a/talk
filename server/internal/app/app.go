@@ -5,6 +5,8 @@ import (
 	authService "talk/internal/services/auth"
 	"talk/internal/transport/http"
 	"talk/internal/transport/ws"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // Структура сервера WebSocket
@@ -17,8 +19,9 @@ type App struct {
 func New(
 	config config.Config,
 	authService *authService.AuthService,
+	db *sqlx.DB,
 ) *App {
-	wsServer := ws.New(config.WebSocket.Port)
+	wsServer := ws.New(config.WebSocket.Port, db)
 	httpServer := http.New(config.Http.Port, authService)
 
 	return &App{

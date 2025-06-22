@@ -15,6 +15,7 @@ const (
 
 	// outgoing
 	MessageTypePing               MessageType = "ping"
+	MessageTypeClientInfo         MessageType = "client_info"
 	MessageTypeAddPeer            MessageType = "add-peer"
 	MessageTypeShareRooms         MessageType = "share-rooms"
 	MessageTypeRemovePeer         MessageType = "remove-peer"

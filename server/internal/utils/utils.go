@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"strconv"
 	"talk/internal/config"
 
@@ -91,4 +92,13 @@ func MergeMaps(map1, map2 map[string]interface{}) map[string]interface{} {
 	}
 
 	return merged
+}
+
+func RemoveSliceElement[T comparable](slice []T, element T) []T {
+	index := slices.Index(slice, element)
+	if index == -1 {
+		return slice // элемент не найден — возвращаем исходный срез
+	}
+	slice[index] = slice[len(slice)-1]
+	return slice[:len(slice)-1]
 }

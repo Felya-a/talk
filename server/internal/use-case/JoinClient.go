@@ -5,16 +5,18 @@ import (
 	. "talk/internal/lib/logger"
 	. "talk/internal/models/messages"
 	message_encoder "talk/internal/services/message_encoder"
+	rooms_storage "talk/internal/services/rooms_storage"
 )
 
 type JoinClientUseCase struct {
-	Hub            *core.Hub
+	RoomsStorage   *rooms_storage.RoomsStorage
 	ShareRooms     ShareRoomsUseCase
 	MessageEncoder message_encoder.MessageEncoder
 }
 
 func (uc *JoinClientUseCase) Execute(client *core.Client, dto JoinMessageDto) {
-	room := uc.Hub.RoomsPool.FindByUuid(dto.RoomUuid)
+	// TODO: Обрабатывать ошибку
+	room, _ := uc.RoomsStorage.FindByUuid(dto.RoomUuid)
 	if room == nil {
 		// TODO: Отправлять ошибку
 		Log.Warn("[JoinClientUseCase] room not found", LogFields{
@@ -24,15 +26,20 @@ func (uc *JoinClientUseCase) Execute(client *core.Client, dto JoinMessageDto) {
 		return
 	}
 
-	// TODO: Возможно лишняя проверка. Она есть в Room
-	// if uc.Hub.RoomsPool.FindByClient(client) != nil {
-	// 	// TODO: Отправлять ошибку
-	// 	Log.Warn("[JoinClientUseCase] client already connected to room", LogFields{
-	// 		"clientUuid": client.Uuid,
-	// 		"roomUuid":   room.Uuid,
-	// 	})
-	// 	return
-	// }
+	// Переподключение пользователя из другой комнаты
+	if foundRoom, _ := uc.RoomsStorage.FindByClient(client); foundRoom != nil {
+		if foundRoom.Uuid == room.Uuid {
+			Log.Info("client is trying to reconnect to his room", LogFields{"clientUuid": client.Uuid, "roomUuid": foundRoom.Uuid})
+			return
+		}
+
+		Log.Info("client already belongs to one of the rooms", LogFields{"clientUuid": client.Uuid, "roomUuid": foundRoom.Uuid})
+		if err := foundRoom.Leave(client); err != nil {
+			Log.Error("error on leave from room", LogFields{"clientUuid": client.Uuid, "roomUuid": foundRoom.Uuid})
+			// TODO: Отправлять ошибку
+			return
+		}
+	}
 
 	room.Join(client)
 

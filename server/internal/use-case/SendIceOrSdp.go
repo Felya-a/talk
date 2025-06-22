@@ -6,10 +6,11 @@ import (
 	. "talk/internal/lib/logger"
 	. "talk/internal/models/messages"
 	message_encoder "talk/internal/services/message_encoder"
+	rooms_storage "talk/internal/services/rooms_storage"
 )
 
 type SendIceOrSdpUseCase struct {
-	Hub              *core.Hub
+	RoomsStorage     *rooms_storage.RoomsStorage
 	ShareRooms       ShareRoomsUseCase
 	MessageEncoder   message_encoder.MessageEncoder
 	FindClientByUuid FindClientByUuid
@@ -23,7 +24,8 @@ func (uc *SendIceOrSdpUseCase) Execute(client *core.Client, targetClientUuid str
 		return errors.New("client not found")
 	}
 
-	room := uc.Hub.RoomsPool.FindByClient(client)
+	// TODO: Обрабатывать ошибку
+	room, _ := uc.RoomsStorage.FindByClient(client)
 	if room == nil {
 		// TODO: Отправлять ошибку
 		Log.Warn("[SendIceOrSdpUseCase] room not found", LogFields{"clientUuid": client.Uuid})

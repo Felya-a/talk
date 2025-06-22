@@ -9,15 +9,19 @@ import (
 	"talk/internal/adapter"
 	"talk/internal/config"
 	"talk/internal/core"
+	events "talk/internal/core/events"
 	"talk/internal/handlers"
 	. "talk/internal/lib/logger"
 	. "talk/internal/models/messages"
+	auth_service "talk/internal/services/auth"
 	message_decoder "talk/internal/services/message_decoder/direct"
 	message_encoder "talk/internal/services/message_encoder/direct"
+	rooms_storage "talk/internal/services/rooms_storage"
 	usecase "talk/internal/use-case"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/jmoiron/sqlx"
 )
 
 type WsTransport struct {
@@ -37,26 +41,35 @@ var upgrader = websocket.Upgrader{
 
 func New(
 	port string,
+	db *sqlx.DB,
 ) *WsTransport {
 	setGinMode()
 	handler := gin.Default()
 
-	roomsPool := core.NewRoomsPool()
+	roomsStorage := rooms_storage.NewRoomsStorage(db)
+
 	router := core.NewMessageRouter()
-	hub := core.NewHub(router, roomsPool)
+	hub := core.NewHub(router, roomsStorage)
 	go hub.Run()
 
 	messageEncoder := message_encoder.NewDirectMessageEncoder()
 	messageDecoder := message_decoder.NewDirectMessageDecoder()
 
-	// Use-case
-	shareRooms := usecase.ShareRoomsUseCase{Hub: hub, MessageEncoder: messageEncoder}
-	joinClient := usecase.JoinClientUseCase{Hub: hub, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
-	leaveClient := usecase.LeaveClientUseCase{Hub: hub, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
-	createRoom := usecase.CreateRoomUseCase{Hub: hub, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
-	sendIceOrSdp := usecase.SendIceOrSdpUseCase{Hub: hub, ShareRooms: shareRooms}
+	authService := auth_service.NewAuthService()
 
-	// Регистрация обработчиков сообщений
+	// use-case
+	findClientByUuid := usecase.FindClientByUuid{Hub: hub}
+	shareRooms := usecase.ShareRoomsUseCase{Hub: hub, RoomsStorage: roomsStorage, MessageEncoder: messageEncoder}
+	joinClient := usecase.JoinClientUseCase{RoomsStorage: roomsStorage, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
+	leaveClient := usecase.LeaveClientUseCase{Hub: hub, RoomsStorage: roomsStorage, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
+	createRoom := usecase.CreateRoomUseCase{RoomsStorage: roomsStorage, ShareRooms: shareRooms, MessageEncoder: messageEncoder}
+	sendIceOrSdp := usecase.SendIceOrSdpUseCase{RoomsStorage: roomsStorage, ShareRooms: shareRooms, MessageEncoder: messageEncoder, FindClientByUuid: findClientByUuid}
+	connectClient := usecase.ConnectClientUseCase{Hub: hub, AuthService: authService}
+
+	// events handlers
+	hub.EventBus.Subscribe(events.ClientConnectedEvent{}.Name(), shareRooms.ExecuteEvent)
+
+	// messages handlers
 	router.RegisterHandler(MessageTypePing, &handlers.PingMessageHandler{})
 	router.RegisterHandler(MessageTypeJoin, &handlers.JoinMessageHandler{JoinClient: joinClient})
 	router.RegisterHandler(MessageTypeLeave, &handlers.LeaveMessageHandler{LeaveClient: leaveClient})
@@ -79,7 +92,9 @@ func New(
 			shareRooms,
 		)
 
-		hub.Register <- webSocketConnection
+		accessToken, err := ctx.Cookie("access_token")
+
+		connectClient.Execute(webSocketConnection, accessToken)
 	})
 
 	wsServer := &http.Server{

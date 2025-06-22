@@ -14,15 +14,14 @@ import (
 
 func main() {
 	config := config.MustLoad()
+	InitGlobalLogger(logger.NewLogrusLogger)
 
 	db := utils.MustConnectPostgres(config)
 	utils.Migrate(db)
 
-	InitGlobalLogger(logger.NewLogrusLogger)
-
 	authService := NewAuthService()
 
-	application := app.New(config, authService)
+	application := app.New(config, authService, db)
 
 	go application.WsServer.MustRun()
 	go application.HttpServer.MustRun()

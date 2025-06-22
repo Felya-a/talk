@@ -63,10 +63,19 @@ func (b *DirectMessageEncoder) BuildPingMessage() TransmitMessage {
 }
 
 func (b *DirectMessageEncoder) BuildSessionDescriptionMessage(dto SessionDescriptionMessageDto) TransmitMessage {
-	messageData := map[string]interface{}{
-		"peer_id":             dto.PeerID,
-		"session_description": dto.SessionDescription,
+	var sessionDescription map[string]interface{}
+	err := json.Unmarshal([]byte(dto.SessionDescription), &sessionDescription)
+	if err != nil {
+		// TODO: возвращать ошибку
 	}
+
+	messageData := map[string]interface{}{
+		"peer_id": dto.PeerID,
+		// "session_description": dto.SessionDescription,
+		"session_description": sessionDescription,
+	}
+
+	Log.Debug("[BuildSessionDescriptionMessage]", LogFields{"session_description": string(dto.SessionDescription)})
 
 	return TransmitMessage{
 		Type: MessageTypeSessionDescription,
@@ -75,13 +84,30 @@ func (b *DirectMessageEncoder) BuildSessionDescriptionMessage(dto SessionDescrip
 }
 
 func (b *DirectMessageEncoder) BuildIceCandidateMessage(dto IceCandidateMessageDto) TransmitMessage {
+	var iceCandidate map[string]interface{}
+	err := json.Unmarshal([]byte(dto.IceCandidate), &iceCandidate)
+	if err != nil {
+		// TODO: возвращать ошибку
+	}
+
 	messageData := map[string]interface{}{
 		"peer_id":       dto.PeerID,
-		"ice_candidate": dto.IceCandidate,
+		"ice_candidate": iceCandidate,
 	}
 
 	return TransmitMessage{
 		Type: MessageTypeIceCandidate,
+		Data: messageData,
+	}
+}
+
+func (b *DirectMessageEncoder) BuildClientInfoMessage(dto ClientInfoMessageDto) TransmitMessage {
+	messageData := map[string]interface{}{
+		"uuid": dto.Uuid,
+	}
+
+	return TransmitMessage{
+		Type: MessageTypeClientInfo,
 		Data: messageData,
 	}
 }

@@ -5,11 +5,12 @@ import (
 )
 
 type FindClientByUuid struct {
-	hub *core.Hub
+	Hub *core.Hub
 }
 
 func (uc *FindClientByUuid) Execute(uuid string) *core.Client {
-	for _, client := range uc.hub.Clients {
+
+	for _, client := range uc.Hub.Clients {
 		if client.Uuid == uuid {
 			return client
 		}

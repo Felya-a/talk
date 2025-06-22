@@ -6,6 +6,7 @@ import (
 
 type MessageEncoder interface {
 	BuildPingMessage() TransmitMessage
+	BuildClientInfoMessage(dto ClientInfoMessageDto) TransmitMessage
 	BuildAddPeerMessage(dto AddPeerMessageDto) TransmitMessage
 	BuildShareRoomsMessage(dto ShareRoomsMessageDto) TransmitMessage
 	BuildRemovePeerMessage(dto RemovePeerMessageDto) TransmitMessage

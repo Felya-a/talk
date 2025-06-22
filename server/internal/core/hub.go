@@ -3,31 +3,38 @@ package core
 import (
 	"slices"
 	"sync"
+	events "talk/internal/core/events"
 	. "talk/internal/lib/logger"
 	. "talk/internal/models/messages"
+	"talk/internal/utils"
 )
 
 type Hub struct {
-	mutex      sync.Mutex
-	Clients    []*Client
+	mutex    sync.Mutex
+	Clients  []*Client
+	EventBus *EventBus
+
 	Register   chan Connection
 	Unregister chan *Client
 	Broadcast  chan TransmitMessage
-	Router     *MessageRouter
-	RoomsPool  *RoomsPool
+
+	Router *MessageRouter
+
+	RoomsStorage RoomsStorage
 }
 
 func NewHub(
 	router *MessageRouter,
-	roomsPool *RoomsPool,
+	roomsStorage RoomsStorage,
 ) *Hub {
 	return &Hub{
-		Clients:    make([]*Client, 0),
-		Register:   make(chan Connection),
-		Unregister: make(chan *Client),
-		Broadcast:  make(chan TransmitMessage),
-		Router:     router,
-		RoomsPool:  roomsPool,
+		Clients:      make([]*Client, 0),
+		Register:     make(chan Connection),
+		Unregister:   make(chan *Client),
+		Broadcast:    make(chan TransmitMessage),
+		Router:       router,
+		RoomsStorage: roomsStorage,
+		EventBus:     NewEventBus(),
 	}
 }
 
@@ -59,6 +66,7 @@ func (hub *Hub) addClient(connection Connection) {
 
 	hub.Clients = append(hub.Clients, client)
 	Log.Info("[Hub] client connected", LogFields{"clientUuid": client.Uuid})
+	hub.EventBus.Publish(events.ClientConnectedEvent{ClientUuid: client.Uuid})
 }
 
 // Удаление пользователя
@@ -71,12 +79,11 @@ func (hub *Hub) removeClient(client *Client) {
 		return
 	}
 
-	index := slices.Index(hub.Clients, client)
-	hub.Clients[index] = hub.Clients[len(hub.Clients)-1]
-	hub.Clients = hub.Clients[:len(hub.Clients)-1]
+	// TODO: проверить работу
+	hub.Clients = utils.RemoveSliceElement(hub.Clients, client)
 
-	room := hub.RoomsPool.FindByClient(client)
-	if room != nil {
+	room, err := hub.RoomsStorage.FindByClient(client)
+	if room != nil && err == nil {
 		room.Leave(client)
 	}
 

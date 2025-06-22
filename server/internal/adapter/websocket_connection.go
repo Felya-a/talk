@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"io"
+	"sync"
 	"time"
 
 	. "talk/internal/lib/logger"
@@ -14,9 +15,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var closeCodes []int = []int{1000, 1001, 1002, 1003, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1015}
+var closeCodes = []int{1000, 1001, 1002, 1003, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1015}
 
 type WebSocketConnection struct {
+	mutex          sync.Mutex
 	conn           *websocket.Conn
 	messageEncoder MessageEncoder
 	messageDecoder MessageDecoder
@@ -66,6 +68,9 @@ func (w *WebSocketConnection) Receive() (ReceiveMessage, error) {
 }
 
 func (w *WebSocketConnection) Send(message TransmitMessage, err error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
 	if err != nil {
 		message = w.messageEncoder.BuildErrorMessage(ErrorMessageDto{Err: err})
 	}
@@ -84,7 +89,9 @@ func (w *WebSocketConnection) Send(message TransmitMessage, err error) {
 
 func (w *WebSocketConnection) Close() {
 	select {
+	// Насколько помню нужно для предотвращения отправки пинга отключенному пользователю
 	case w.closeCh <- struct{}{}:
+		close(w.closeCh) // Освобождение памяти. Не уверен что нужно, но пусть будет
 	default:
 	}
 

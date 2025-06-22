@@ -16,7 +16,7 @@ build-app-with-logs:
 	echo "Build completed!"
 
 create-migration:
-	# Создаст два файла миграции с именем указанным в параметре name или по имени текущей ветки git
+	# Создаст файл миграции с именем указанным в параметре name или по имени текущей ветки git
 	# make create-migration
 	# make create-migration name="<migration name>"
 	go run cmd/migrator/create/main.go --migration_name=$(or $(name),$(shell git rev-parse --abbrev-ref HEAD))

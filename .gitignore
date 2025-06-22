@@ -3,4 +3,5 @@
 server/bin/
 server/tmp/
 server/config/
+server/coverage*
 !server/config/example.env

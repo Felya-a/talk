@@ -21,9 +21,10 @@ func NewLogrusLogger() AbstractLogger {
 	logrusLogger.SetLevel(logrus.DebugLevel)
 	logrusLogger.SetOutput(os.Stdout)
 	logrusLogger.SetFormatter(&logrus.TextFormatter{
-		ForceColors:   true,
-		FullTimestamp: true,
-		SortingFunc:   sortingFunc,
+		ForceColors:     true,
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02T15:04:05.000",
+		SortingFunc:     sortingFunc,
 	})
 
 	return &LogrusLogger{
