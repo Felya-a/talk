@@ -5,22 +5,27 @@ import (
 	"errors"
 	"talk/internal/core"
 	. "talk/internal/lib/logger"
+	. "talk/internal/services/message_encoder"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type PostgresRoomsRepository struct {
-	db *sqlx.DB
+	db             *sqlx.DB
+	messageEncoder MessageEncoder
 }
 
-func NewPostgresRoomsRepository(db *sqlx.DB) *PostgresRoomsRepository {
-	return &PostgresRoomsRepository{db}
+func NewPostgresRoomsRepository(
+	db *sqlx.DB,
+	messageEncoder MessageEncoder,
+) *PostgresRoomsRepository {
+	return &PostgresRoomsRepository{db, messageEncoder}
 }
 
 func (r *PostgresRoomsRepository) FindAll() ([]*core.Room, error) {
-	var rooms = make([]*core.Room, 0)
+	var roomsDtos = make([]core.RoomDto, 0)
 
-	err := r.db.Select(&rooms, `
+	err := r.db.Select(&roomsDtos, `
 		select
 			uuid,
 			name
@@ -28,9 +33,14 @@ func (r *PostgresRoomsRepository) FindAll() ([]*core.Room, error) {
 	`)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return rooms, nil
+			return nil, nil
 		}
-		return rooms, err
+		return nil, err
+	}
+
+	var rooms = make([]*core.Room, 0)
+	for _, roomDto := range roomsDtos {
+		rooms = append(rooms, core.NewRoom(roomDto, r.messageEncoder))
 	}
 
 	return rooms, nil

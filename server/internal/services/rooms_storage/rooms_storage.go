@@ -5,6 +5,7 @@ import (
 	"talk/internal/core"
 
 	. "talk/internal/lib/logger"
+	. "talk/internal/services/message_encoder"
 	in_memory_rooms_storage "talk/internal/services/rooms_storage/repository/in_memory"
 	postgres_rooms_storage "talk/internal/services/rooms_storage/repository/postgres"
 
@@ -15,10 +16,14 @@ type RoomsStorage struct {
 	mutex                sync.RWMutex
 	liveRepository       RoomsRepository
 	persistentRepository RoomsRepository
+	MessageEncoder       MessageEncoder
 }
 
-func NewRoomsStorage(db *sqlx.DB) *RoomsStorage {
-	postgresRepository := postgres_rooms_storage.NewPostgresRoomsRepository(db)
+func NewRoomsStorage(
+	db *sqlx.DB,
+	messageEncoder MessageEncoder,
+) *RoomsStorage {
+	postgresRepository := postgres_rooms_storage.NewPostgresRoomsRepository(db, messageEncoder)
 	liveRepository := in_memory_rooms_storage.NewInMemoryRoomsRepository()
 
 	// Инициализация in memory хранилища

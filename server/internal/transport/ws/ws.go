@@ -46,14 +46,14 @@ func New(
 	setGinMode()
 	handler := gin.Default()
 
-	roomsStorage := rooms_storage.NewRoomsStorage(db)
+	messageEncoder := message_encoder.NewDirectMessageEncoder()
+	messageDecoder := message_decoder.NewDirectMessageDecoder()
+
+	roomsStorage := rooms_storage.NewRoomsStorage(db, messageEncoder)
 
 	router := core.NewMessageRouter()
 	hub := core.NewHub(router, roomsStorage)
 	go hub.Run()
-
-	messageEncoder := message_encoder.NewDirectMessageEncoder()
-	messageDecoder := message_decoder.NewDirectMessageDecoder()
 
 	authService := auth_service.NewAuthService()
 

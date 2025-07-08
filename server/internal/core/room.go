@@ -7,13 +7,15 @@ import (
 	. "talk/internal/lib/logger"
 	. "talk/internal/models/messages"
 	. "talk/internal/services/message_encoder"
-
-	"github.com/google/uuid"
 )
 
+type RoomDto struct {
+	Uuid string
+	Name string
+}
+
 type Room struct {
-	Uuid    string
-	Name    string
+	RoomDto
 	Clients []*Client
 
 	mutex          sync.Mutex
@@ -22,14 +24,17 @@ type Room struct {
 }
 
 func NewRoom(
-	name string,
+	dto RoomDto,
 	messageEncoder MessageEncoder,
 ) *Room {
 	var room = &Room{
-		Uuid:      uuid.New().String(),
-		Name:      name,
-		Clients:   []*Client{},
-		broadcast: make(chan TransmitMessage),
+		RoomDto: RoomDto{
+			Uuid: dto.Uuid,
+			Name: dto.Name,
+		},
+		Clients:        []*Client{},
+		broadcast:      make(chan TransmitMessage),
+		messageEncoder: messageEncoder,
 	}
 
 	go room.Run()
@@ -67,10 +72,9 @@ func (r *Room) Leave(client *Client) error {
 		return errors.New("client not found in room")
 	}
 
-	// TODO: Нужно рассылать всем клиентам, а не только клиентам этой комнаты
-	// r.broadcast <- r.messageEncoder.BuildRemovePeerMessage(
-	// 	RemovePeerMessageDto{ClientUuid: client.Uuid.String()},
-	// )
+	r.broadcast <- r.messageEncoder.BuildRemovePeerMessage(
+		RemovePeerMessageDto{ClientUuid: client.Uuid},
+	)
 
 	return nil
 }

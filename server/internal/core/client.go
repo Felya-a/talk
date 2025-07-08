@@ -46,7 +46,7 @@ func (client *Client) ReadPump(router *MessageRouter) {
 		if err != nil {
 			if errors.Is(err, ErrCloseConnection) {
 				Log.Info("[Client] close connection", LogFields{"clientUuid": client.Uuid})
-				return
+				return // Завершение чтения сообщений из соединения пользователя
 			}
 			Log.Error("[Client] error on read message from connection", LogFields{"clientUuid": client.Uuid, "error": err})
 			continue

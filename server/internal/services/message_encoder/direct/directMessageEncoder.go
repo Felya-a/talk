@@ -70,12 +70,9 @@ func (b *DirectMessageEncoder) BuildSessionDescriptionMessage(dto SessionDescrip
 	}
 
 	messageData := map[string]interface{}{
-		"peer_id": dto.PeerID,
-		// "session_description": dto.SessionDescription,
+		"peer_id":             dto.PeerID,
 		"session_description": sessionDescription,
 	}
-
-	Log.Debug("[BuildSessionDescriptionMessage]", LogFields{"session_description": string(dto.SessionDescription)})
 
 	return TransmitMessage{
 		Type: MessageTypeSessionDescription,
