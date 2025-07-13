@@ -42,16 +42,16 @@ jobs:
             github_runner/talk-server:stage \
             ${{ secrets.DOCKER_REGISTRY_HOST }}/talk-server:stage
 
-  restart-stage:
+  deploy-stage:
     runs-on: self-hosted
     needs: push-image
     environment: stage
 
     steps:
-      - name: Restart stage
+      - name: Deploy stage
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           echo "$DEPLOY_SSH_KEY" > deploy_key.pem
           chmod 600 deploy_key.pem
-          ssh -i deploy_key.pem -o StrictHostKeyChecking=no root@ifedoseev.ru "cd /root/chat_app/stage && docker compose down && docker compose up -d --build --force-recreate"
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no root@talk.ifedoseev.ru "cd /root/talk/stage && docker compose down && docker compose up -d --build --force-recreate"
